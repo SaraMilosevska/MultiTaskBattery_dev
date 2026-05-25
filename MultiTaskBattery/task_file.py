@@ -964,25 +964,45 @@ class FingerSequence(TaskFile):
     def __init__(self, const):
         super().__init__(const)
         self.name = 'finger_sequence'
-        self.matching_stimuli = False # sequence of numbers are different for easy and hard sequence condition
+        self.matching_stimuli = False
 
-    def generate_sequence(self):
-        sequence = [random.choice([1, 2, 3, 4])]
-        while len(sequence) < 6:
-            next_digit = random.choice([d for d in [1, 2, 3, 4] if d != sequence[-1]])
-            sequence.append(next_digit)
+    def generate_sequence(self, condition='complex'):
+        if condition == 'repetition':
+            digit = random.choice([1, 2, 3, 4])
+            sequence = [digit] * 6
+        elif condition == 'alternating':
+            digits = random.sample([1, 2, 3, 4], 2)
+            sequence = [digits[i % 2] for i in range(6)]
+        else:
+            sequence = [random.choice([1, 2, 3, 4])]
+            while len(sequence) < 6:
+                next_digit = random.choice([d for d in [1, 2, 3, 4] if d != sequence[-1]])
+                sequence.append(next_digit)
         return ' '.join(map(str, sequence))
 
     def make_task_file(self,
                         hand = 'bimanual',
-                        responses = [1,2,3,4], # 1 = Key_one, 2 = Key_two, 3 = Key_three, 4 = Key_four
+                        responses = [1,2,3,4],
                         task_dur=30,
                         trial_dur=3.25,
                         iti_dur=0.5,
+                        conditions=None,
                         file_name=None):
-        n_trials = int(np.floor(task_dur / (trial_dur + iti_dur)))
-        trial_info = []
+        if conditions is None:
+            conditions = ['complex']
 
+        n_trials = int(np.floor(task_dur / (trial_dur + iti_dur)))
+        # Distribute trials evenly across conditions
+        trials_per_condition = n_trials // len(conditions)
+        condition_list = []
+        for cond in conditions:
+            condition_list.extend([cond] * trials_per_condition)
+        # Assign any remainder trials round-robin
+        for i in range(n_trials - len(condition_list)):
+            condition_list.append(conditions[i % len(conditions)])
+        random.shuffle(condition_list)
+
+        trial_info = []
         t = 0
 
         for n in range(n_trials):
@@ -993,11 +1013,11 @@ class FingerSequence(TaskFile):
             trial['key_four'] = responses[3]
             trial['trial_num'] = n
             trial['hand'] = hand
+            trial['condition'] = condition_list[n]
             trial['trial_dur'] = trial_dur
             trial['iti_dur'] = iti_dur
             trial['display_trial_feedback'] = True
-            # choose random sequence
-            trial['stim'] = self.generate_sequence()
+            trial['stim'] = self.generate_sequence(condition_list[n])
             trial['start_time'] = t
             trial['end_time'] = t + trial_dur + iti_dur
             trial_info.append(trial)
