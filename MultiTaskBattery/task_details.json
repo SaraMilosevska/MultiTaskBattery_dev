@@ -550,7 +550,8 @@
     "finger_sequence": {
         "short_description": "Press a sequence of buttons.",
         "recorded_metrics": "Accuracy + RT",
-        "detailed_description": "A sequence of 6 digits (1-4) is displayed and participants press the corresponding buttons in order as quickly and accurately as possible. No consecutive repeats appear in the sequence.",
+        "conditions": "complex, repetition, alternating",
+        "detailed_description": "A sequence of 6 digits (1-4) is displayed and participants press the corresponding buttons in order as quickly and accurately as possible. In the complex condition, digits are pseudo-randomly chosen with no consecutive repeats. In the repetition condition, a single digit is repeated six times. In the alternating condition, two digits alternate.",
         "task_file_parameters": {
             "hand": {
                 "type": "str",
@@ -576,6 +577,11 @@
                 "type": "float",
                 "default": "0.5",
                 "description": "Inter-trial interval duration in seconds."
+            },
+            "conditions": {
+                "type": "list",
+                "default": "['complex']",
+                "description": "Sequence complexity conditions to include. Options: 'complex' (pseudo-random, no consecutive repeats), 'repetition' (single digit repeated), 'alternating' (two digits alternating)."
             }
         }
     },
