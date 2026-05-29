@@ -965,6 +965,9 @@ class FingerSequence(Task):
         num_presses =0
         # Initialize the color for each digit in the sequence as black
         digit_colors = ['black'] * num_items
+        # Raw press-level data for later sequence analysis (IPIs, chunking, error patterns)
+        press_times = []
+        press_keys = []
         while self.ttl_clock.get_time() - sequence_start_time < trial['trial_dur'] and num_presses < num_items:
             self.ttl_clock.update()
 
@@ -975,6 +978,8 @@ class FingerSequence(Task):
                 rt = key_press_time - digit_start_time
                 rt_list[num_presses]=rt
                 digit_start_time = key_press_time
+                press_times.append(key_press_time - sequence_start_time)
+                press_keys.append(key)
 
                 # Check if key pressed is correct
                 correct_list[num_presses] = key == int(sequence[num_presses])
@@ -994,6 +999,10 @@ class FingerSequence(Task):
         else:
             # If the sequence is completed, wait until the end of the trial
             self.ttl_clock.wait_until(sequence_start_time + trial['trial_dur'])
+
+        # Store raw press data (times relative to sequence onset, and key identities)
+        trial['press_times'] = ' '.join(f'{t:.4f}' for t in press_times) if press_times else ''
+        trial['press_keys'] = ' '.join(str(k) for k in press_keys) if press_keys else ''
 
         # if any press is wrong trial['correct'] needs to be false, this is for post trial feedback
         trial['correct'] = correct_list.sum()/num_items
