@@ -16,14 +16,19 @@ from MultiTaskBattery.screen import Screen
 
 
 class Experiment:
-    def __init__(self, const, subj_id):
+    def __init__(self, const, subj_id, screen=None):
         """    A general class with attributes common to experiments
 
-               Args: 
+               Args:
                     const (module):
                         local constants.py module (see example_experiment/constants.py) as example
                     subj_id (str):
                         id for the subject
+                    screen (Screen, optional):
+                        an existing Screen to reuse. If None (default), a new
+                        Screen/Window is opened. Passing an existing screen lets
+                        successive Experiments (e.g. consecutive phases) share a
+                        single window instead of opening a new one each time.
                 Returns:
                     self (object):
                         an instance of the Experiment class
@@ -36,7 +41,9 @@ class Experiment:
         self.ttl_clock = TTLClock()
         # open screen and display fixation cross
         ### set the resolution of the subject screen here:
-        self.screen = Screen(const.screen)
+        # Reuse an existing screen if one was passed in (so consecutive runs/phases
+        # share a single window); otherwise open a new one.
+        self.screen = screen if screen is not None else Screen(const.screen)
 
         # connect to the eyetracker already
         if self.const.eye_tracker:
