@@ -948,16 +948,6 @@ class FingerSequence(Task):
         spacing = 2.0
         start_x = -(num_items - 1) * spacing / 2
 
-        # --- DIAGNOSTIC (temporary): log trial identity + resource trend before drawing.
-        # Helps isolate the iMac late-block hang at stim.draw(). Remove once resolved.
-        try:
-            print(f"[fingerseq] TRIAL cond={trial.get('condition')} stim={trial['stim']!r} "
-                  f"num_items={num_items} gc_objs={len(gc.get_objects())}", flush=True)
-            assert all(c in '1234' for c in trial['stim'].replace(' ', '')), \
-                f"[fingerseq] BAD STIM value: {trial['stim']!r}"
-        except Exception as _diag_e:
-            print(f"[fingerseq] diag warning: {_diag_e}", flush=True)
-
         # Build the digit stimuli ONCE and reuse them every frame. Constructing a new
         # visual.TextStim inside the draw loop allocates a font/GL texture per frame and
         # leaks GL resources across trials (the likely cause of the late-block draw hang).
@@ -1003,17 +993,10 @@ class FingerSequence(Task):
 
                 num_presses += 1
 
-            # --- DIAGNOSTIC (temporary): time the draw and flip to catch the stall escalating.
-            _t0 = self.ttl_clock.clock.getTime()
             # Draw all digits with their (possibly updated) colors
             for s in stims:
                 s.draw()
-            _t1 = self.ttl_clock.clock.getTime()
             self.window.flip()
-            _t2 = self.ttl_clock.clock.getTime()
-            if (_t1 - _t0) > 0.05 or (_t2 - _t1) > 0.05:
-                print(f"[fingerseq] SLOW draw={1e3*(_t1-_t0):.1f}ms flip={1e3*(_t2-_t1):.1f}ms "
-                      f"presses={num_presses} gc_objs={len(gc.get_objects())}", flush=True)
 
         else:
             # If the sequence is completed, wait until the end of the trial
