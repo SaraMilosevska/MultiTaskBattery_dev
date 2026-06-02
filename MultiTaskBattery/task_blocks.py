@@ -948,11 +948,17 @@ class FingerSequence(Task):
         spacing = 2.0
         start_x = -(num_items - 1) * spacing / 2
 
-        # Show the numbers in the sequence next to each other ( using the spacing and start_x calculated above)
-        for i, number in enumerate(sequence):
-            pos = (start_x + i * spacing, 0.0)  # Horizontal position is adjusted based on index
-            stim = visual.TextStim(self.window, text=number, pos=pos, color='black', units='deg', height=1.5)
-            stim.draw()
+        # Build the digit stimuli ONCE and reuse them every frame. Constructing a new
+        # visual.TextStim inside the draw loop allocates a font/GL texture per frame and
+        # leaks GL resources across trials (the likely cause of the late-block draw hang).
+        stims = [visual.TextStim(self.window, text=number,
+                                 pos=(start_x + i * spacing, 0.0),
+                                 color='black', units='deg', height=1.5)
+                 for i, number in enumerate(sequence)]
+
+        # Show the numbers in the sequence next to each other
+        for s in stims:
+            s.draw()
 
         self.window.flip()
 
@@ -963,8 +969,6 @@ class FingerSequence(Task):
         rt_list = np.full(num_items,np.nan)
         correct_list = np.zeros((num_items,)) # List of booleans indicating whether each press was correct needed for overall trial accuracy
         num_presses =0
-        # Initialize the color for each digit in the sequence as black
-        digit_colors = ['black'] * num_items
         # Raw press-level data for later sequence analysis (IPIs, chunking, error patterns)
         press_times = []
         press_keys = []
@@ -984,16 +988,14 @@ class FingerSequence(Task):
                 # Check if key pressed is correct
                 correct_list[num_presses] = key == int(sequence[num_presses])
 
-                # Update color based on correctness
-                digit_colors[num_presses] = 'green' if correct_list[num_presses] else 'red'
+                # Update color of the pressed digit based on correctness (reuse existing stim)
+                stims[num_presses].color = 'green' if correct_list[num_presses] else 'red'
 
                 num_presses += 1
-            # Draw all digits with their adjusted colors
-            for i, (number, color) in enumerate(zip(sequence, digit_colors)):
-                pos = (start_x + i * spacing, 0.0)
-                stim = visual.TextStim(self.window, text=number, pos=pos, color=color, units='deg', height=1.5)
-                stim.draw()
 
+            # Draw all digits with their (possibly updated) colors
+            for s in stims:
+                s.draw()
             self.window.flip()
 
         else:
